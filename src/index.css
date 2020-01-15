@@ -1,13 +1,50 @@
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: "Roboto", "Helvetica", "Arial", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: #01A9DB;
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+.domain {
+  stroke: #fff;
+}
+
+.tick line, .tick text {
+  stroke: #fff;
+}
+
+.label {
+  fill: #fff;
+}
+
+.App {
+  background-color: #01A9DB;
+}
+
+.header {
+  height: 60px;
+  padding: 20px 0 20px 0;
+}
+
+.anchor {
+  height: 60px;
+}
+
+.goal {
+  stroke: #fff;
+  fill: #E7B266;
+}
+
+.goal.nah {
+  fill: #EA3643;
+}
+
+.goal.woah {
+  fill: #79fa65;
 }
