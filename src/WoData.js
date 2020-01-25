@@ -20,14 +20,7 @@ function WoData(props) {
       allRecords = allRecords.concat(records)
       fetchNextPage()
 
-    }, function done(err) {
-      const exPerDate = allRecords.reduce((acc, r, i) => {
-        if (Object.keys(acc).indexOf(r.get('Date')) === -1) {
-          acc[r.get('Date')] = i
-        }
-        return acc
-      }, {})
-      
+    }, function done(err) {      
       if (err) { console.error(err); return; }
 
       base('Exercises').select({
@@ -83,9 +76,18 @@ function WoData(props) {
           flatData = flatData.concat(Array.from(d))
         }
 
+        const exPerDate = flatData.reduce((acc, r, i) => {
+          if (Object.keys(acc).indexOf(r[1].date) === -1) {
+            acc[r[1].date] = [i]
+          } else {
+            acc[r[1].date].push(i)
+          }
+          return acc
+        }, {})
+
         const svg = d3.select(svgEl.current)
         const margin = 80;
-        const width = 1000 - 2 * margin;
+        const width = 1500 - 2 * margin;
         const height = 600 - 2 * margin;
 
         const legend = svg.append("g")
@@ -137,7 +139,7 @@ function WoData(props) {
         const xScale = d3.scaleBand()
           .range([0, width])
           .domain(Array.from(byDate.keys()))
-          .padding(0.6)
+          .padding(0.45)
         
         const yScale = d3.scaleLinear()
           .range([height, 0])
@@ -173,9 +175,12 @@ function WoData(props) {
           })
           .attr('x', (g, i) => {
             const date = g[1].date
-            console.log(exPerDate[date])
-            // return xScale(date) + 1*i
-            return xScale(date) + ((i-exPerDate[date])*12)
+            const loc = exPerDate[date].indexOf(i)
+            let d = 0
+            if (loc !== -1) {
+              d = loc
+            }
+            return xScale(date) + (d * 12)
           })
           .attr('y', (g) => yScale(g[1].averageStat))
           .attr('height', (g) => height - yScale(g[1].averageStat))
@@ -196,7 +201,12 @@ function WoData(props) {
           })
           .attr("cx", (g, i) => {
             const date = g[1].date
-            return (xScale(date) + (i-exPerDate[date])*12) + 5
+            const loc = exPerDate[date].indexOf(i)
+            let d = 0
+            if (loc !== -1) {
+              d = loc
+            }
+            return xScale(date) + (d * 12)
           })
           .attr("cy", (g) => yScale(allExercisesData[g[1].exercise].stat))
           .attr("r", 5)
