@@ -4,7 +4,7 @@ import * as d3 from 'd3'
 
 function WoData(props) {
   
-  const svgEl = useRef(null)
+  const svgEl = useRef(null);
 
   useEffect(() => {
 
@@ -87,8 +87,9 @@ function WoData(props) {
 
         const svg = d3.select(svgEl.current)
         const margin = 80;
-        const width = 1500 - 2 * margin;
+        const width = (Array.from(byDate.keys()).length * 180) - 2 * margin;
         const height = 600 - 2 * margin;
+        svgEl.current.style.width = `${width}px`
 
         const legend = svg.append("g")
         legend.append("circle")
@@ -206,7 +207,7 @@ function WoData(props) {
             if (loc !== -1) {
               d = loc
             }
-            return xScale(date) + (d * 12)
+            return xScale(date) + (d * 12) + 5
           })
           .attr("cy", (g) => yScale(allExercisesData[g[1].exercise].stat))
           .attr("r", 5)
@@ -233,8 +234,9 @@ function WoData(props) {
   })
 
   return (
-    <div style={{width: '1000px', height: '600px', margin: 'auto', backgroundColor: '#01A9DB'}}>
-      <svg style={{width: '100%', height: '100%'}} ref={svgEl} />
+    <div style={{width: '1000px', height: '600px', margin: 'auto',
+                 backgroundColor: '#01A9DB', overflowX: 'scroll', overflowY: 'hidden'}}>
+      <svg  style={{height: '100%'}}  ref={svgEl} />
     </div>
   )
 }
