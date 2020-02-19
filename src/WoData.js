@@ -295,7 +295,7 @@ function WoData(props) {
         <Typography variant="h6">Aggregate success report</Typography>
         {[...date.value[1]].map((e, ei) => {
           sets = 0
-          const skippedSets = new Array(e[1].goalSets - e[1].averageSets).fill()
+          const skippedSets = new Array(Math.max(e[1].goalSets - e[1].averageSets, 0)).fill()
           return ([
             <Typography key={`ex${ei}`} variant="h4" style={{marginTop: '20px'}}>{e[0]}</Typography>,
             <div key={`cex${ei}`}>
@@ -311,9 +311,10 @@ function WoData(props) {
                       ? 'Green' : repsDiff > 0 ? 'Red' : 'Black'
                     let text = (<span><span style={{color: weightSuccess}}>{e[1].weights[ui]}/{e[1].goalWeight}lbs</span><br/>
                       <span style={{color: repsSuccess}}>{e[1].reps[ui]}/{e[1].goalReps} times</span></span>)
+                    const isExtraSet = sets > e[1].goalSets ? 'Green' : '#a0a0a0'
                     return (<ListItem key={`l${ui}_${i}`}>
                       <ListItemAvatar>
-                        <Avatar style={{textAlign: 'center', fontSize: '15px'}}>{`Set ${sets}`}</Avatar>
+                        <Avatar style={{backgroundColor: isExtraSet, textAlign: 'center', fontSize: '15px'}}>{`Set ${sets}`}</Avatar>
                       </ListItemAvatar>
                       <ListItemText primary={text} />
                     </ListItem>)
@@ -323,7 +324,7 @@ function WoData(props) {
                   sets++
                   return (<ListItem key={`s${i}`}>
                     <ListItemAvatar>
-                        <Avatar style={{textAlign: 'center', fontSize: '15px'}}>{`Set ${sets}`}</Avatar>
+                        <Avatar style={{backgroundColor: 'Red', textAlign: 'center', fontSize: '15px'}}>{`Set ${sets}`}</Avatar>
                       </ListItemAvatar>
                     <ListItemText primary={(<span style={{color: 'red'}}>Skipped!</span>)} />
                   </ListItem>)
