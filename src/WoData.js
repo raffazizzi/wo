@@ -1,12 +1,27 @@
-import React, {useRef, useEffect} from 'react'
+import React, {useRef, useEffect, useState} from 'react'
 import * as A from 'airtable'
 import * as d3 from 'd3'
+import Container from '@material-ui/core/Container';
+import useMediaQuery from '@material-ui/core/useMediaQuery';
+import Typography from '@material-ui/core/Typography';
+import List from '@material-ui/core/List';
+import ListItem from '@material-ui/core/ListItem';
+import ListItemText from '@material-ui/core/ListItemText';
+import Paper from '@material-ui/core/Paper';
+import ListItemAvatar from '@material-ui/core/ListItemAvatar';
+import Avatar from '@material-ui/core/Avatar';
 
 function WoData(props) {
   
   const svgEl = useRef(null);
+  const d3isDone = useRef(false)
+  const [date, setDate] = useState('');
 
   useEffect(() => {
+    // Ensures that d3 DOM operations are only done once.
+    if (d3isDone.current) {
+      return
+    }
 
     const base = new A({apiKey: 'keyABekhLaYIHre0d'}).base('appQx1tmm4vNz1Zvh');
     let allRecords = []
@@ -25,13 +40,15 @@ function WoData(props) {
 
       base('Exercises').select({
         view: "All",
-        fields: ['Name', stat]
+        fields: ['Name', 'Weight', 'Reps', 'Sets']
       }).eachPage(function page(records, fetchNextPage) {    
         // allRecords = allRecords.concat(records)
         for (const r of records) {
           allExercisesData[r.id] = {
-            name: r.get("Name"),
-            stat: r.get(stat)
+            name: r.get('Name'),
+            weight: r.get('Weight'),
+            reps: r.get('Reps'),
+            sets: r.get('Sets'),
           }
         }
         fetchNextPage()
@@ -53,18 +70,29 @@ function WoData(props) {
 
         byDate.forEach((r, d) => {
           byDate.set(d, r.reduce((acc, r) => {
-            const ex = allExercisesData[r.get('Exercise')].name
-            if (acc.has(ex)) {
-              const wData = acc.get(ex)
-              wData.stats.push(r.get(stat))
-              wData.averageStat = wData.stats.reduce((a, b) => a + b, 0) / wData.stats.length
+            const ex = allExercisesData[r.get('Exercise')]
+            if (acc.has(ex.name)) {
+              const wData = acc.get(ex.name)
+              wData.weights.push(r.get('Weight'))
+              wData.averageWeight = wData.weights.reduce((a, b) => a + b, 0) / wData.weights.length
+              wData.reps.push(r.get('Reps'))
+              wData.averageReps = wData.reps.reduce((a, b) => a + b, 0) / wData.reps.length
+              wData.sets.push(r.get('Sets'))
+              wData.averageSets = wData.sets.reduce((s, acc) => acc + s, 0)
             } else {
               // Calculate averages
-              acc.set(ex, {
+              acc.set(ex.name, {
                 date: d,
                 exercise: r.get('Exercise'),
-                stats: [r.get(stat)],
-                averageStat: r.get(stat)
+                weights: [r.get('Weight')],
+                averageWeight: r.get('Weight'),
+                goalWeight: ex.weight,
+                reps: [r.get('Reps')],
+                averageReps: r.get('Reps'),
+                goalReps: ex.reps,
+                sets: [r.get('Sets')],
+                averageSets: r.get('Sets'),
+                goalSets: ex.sets,
               })
             }
             return acc
@@ -163,6 +191,11 @@ function WoData(props) {
             .tickFormat('')
           )
 
+        const deselectOthers = (exclude) => {
+          svg.selectAll(`:not(${exclude})`)
+            .classed('selected', false)
+        }
+
         const barGroups = chart.selectAll()
           .data(flatData)
           .enter()
@@ -172,7 +205,7 @@ function WoData(props) {
           .append('rect')
           .attr('style', 'fill:#141926; filter:drop-shadow(0px 1px 1px rgba(0, 0, 0, 1))')
           .attr('class', (g) => {
-            return g[0].replace(/ /g, '_')
+            return `${g[0].replace(/ /g, '_')} d${g[1].date}`            
           })
           .attr('x', (g, i) => {
             const date = g[1].date
@@ -183,15 +216,23 @@ function WoData(props) {
             }
             return xScale(date) + (d * 12)
           })
-          .attr('y', (g) => yScale(g[1].averageStat))
-          .attr('height', (g) => height - yScale(g[1].averageStat))
+          .attr('y', (g) => yScale(g[1][`average${stat}`]))
+          .attr('height', (g) => height - yScale(g[1][`average${stat}`]))
           .attr('width', 10)
+          .on("click", (g) => {
+            svg.selectAll(`.d${g[1].date}`)
+            .classed('selected', function (d, i) {
+              return d3.select(this).classed('selected', true)
+            })
+            deselectOthers(`.d${g[1].date}`)
+            setDate({value: [g[1].date, byDate.get(g[1].date)]})
+          })
 
         barGroups
           .append('circle')
           .attr('class', (g) => {
-            const w = allExercisesData[g[1].exercise].stat
-            const aw = g[1].averageStat
+            const w = g[1][`goal${stat}`]
+            const aw = g[1][`average${stat}`]
             if (aw > w) {
               return 'goal woah'
             } else if (aw < w) {
@@ -209,7 +250,7 @@ function WoData(props) {
             }
             return xScale(date) + (d * 12) + 5
           })
-          .attr("cy", (g) => yScale(allExercisesData[g[1].exercise].stat))
+          .attr("cy", (g) => yScale(allExercisesData[g[1].exercise][stat.toLowerCase()]))
           .attr("r", 5)
         
           svg
@@ -228,17 +269,81 @@ function WoData(props) {
             .attr('text-anchor', 'middle')
             .text('Training days')
 
+        // Select latest date
+        svg.selectAll(`.d${byDate.keys().next().value}`)
+          .classed('selected', true)
+
+        setDate(byDate.entries().next())
+
+        d3isDone.current = true
+
       })
     })
 
   })
 
-  return (
-    <div style={{width: '1000px', height: '600px', margin: 'auto',
+  const isLgScreen = useMediaQuery('(min-width:1200px)');
+  const isMdScreen = useMediaQuery('(min-width:600px)');
+
+  const containerWidth = isLgScreen ? 1000 : isMdScreen ? 600 : 300
+  
+  let sets = 0
+  const dateData = !date ? '' : 
+    (
+      <Paper elevation={1} style={{padding: '1em' }}>
+        <Typography variant="h3">Workout of {date.value[0]}</Typography>
+        <Typography variant="h6">Aggregate success report</Typography>
+        {[...date.value[1]].map((e, ei) => {
+          sets = 0
+          const skippedSets = new Array(e[1].goalSets - e[1].averageSets).fill()
+          return ([
+            <Typography key={`ex${ei}`} variant="h4" style={{marginTop: '20px'}}>{e[0]}</Typography>,
+            <div key={`cex${ei}`}>
+              <List style={{display: 'flex', flexDirection: 'row', padding: 0,}}>
+                {e[1].sets.map((us, ui) => {
+                  return Array(us).fill().map((s, i) => {
+                    sets++
+                    const weightDiff = e[1].goalWeight - e[1].weights[ui]
+                    const weightSuccess = weightDiff < 0 
+                      ? 'Green' : weightDiff > 0 ? 'Red' : 'Black'
+                    const repsDiff = e[1].goalReps - e[1].reps[ui]
+                    const repsSuccess = repsDiff < 0 
+                      ? 'Green' : repsDiff > 0 ? 'Red' : 'Black'
+                    let text = (<span><span style={{color: weightSuccess}}>{e[1].weights[ui]}/{e[1].goalWeight}lbs</span><br/>
+                      <span style={{color: repsSuccess}}>{e[1].reps[ui]}/{e[1].goalReps} times</span></span>)
+                    return (<ListItem key={`l${ui}_${i}`}>
+                      <ListItemAvatar>
+                        <Avatar style={{textAlign: 'center', fontSize: '15px'}}>{`Set ${sets}`}</Avatar>
+                      </ListItemAvatar>
+                      <ListItemText primary={text} />
+                    </ListItem>)
+                  })
+                })}
+                {skippedSets.map((s, i) => {
+                  sets++
+                  return (<ListItem key={`s${i}`}>
+                    <ListItemAvatar>
+                        <Avatar style={{textAlign: 'center', fontSize: '15px'}}>{`Set ${sets}`}</Avatar>
+                      </ListItemAvatar>
+                    <ListItemText primary={(<span style={{color: 'red'}}>Skipped!</span>)} />
+                  </ListItem>)
+                })}
+              </List>
+            </div>
+          ])
+        })}
+      </Paper>
+    )
+
+  return ([
+    <div key="graph" style={{width: `${containerWidth}px`, height: '600px', margin: 'auto',
                  backgroundColor: '#01A9DB', overflowX: 'scroll', overflowY: 'hidden'}}>
       <svg  style={{height: '100%'}}  ref={svgEl} />
-    </div>
-  )
+    </div>,
+    <Container fixed key="stats" style={{width: `${containerWidth}px`, margin: 'auto', marginTop: '1em'}}>
+      {dateData}
+    </Container>
+  ])
 }
 
 export default WoData

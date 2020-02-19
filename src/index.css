@@ -48,3 +48,7 @@ code {
 .goal.woah {
   fill: #79fa65;
 }
+
+.selected {
+  fill: white !important;
+}
