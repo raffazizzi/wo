@@ -299,7 +299,7 @@ function WoData(props) {
           return ([
             <Typography key={`ex${ei}`} variant="h4" style={{marginTop: '20px'}}>{e[0]}</Typography>,
             <div key={`cex${ei}`}>
-              <List style={{display: 'flex', flexDirection: 'row', padding: 0,}}>
+              <List style={{display: 'flex', flexWrap: 'wrap', flexDirection: 'row', padding: 0,}}>
                 {e[1].sets.map((us, ui) => {
                   return Array(us).fill().map((s, i) => {
                     sets++
@@ -312,7 +312,7 @@ function WoData(props) {
                     let text = (<span><span style={{color: weightSuccess}}>{e[1].weights[ui]}/{e[1].goalWeight}lbs</span><br/>
                       <span style={{color: repsSuccess}}>{e[1].reps[ui]}/{e[1].goalReps} times</span></span>)
                     const isExtraSet = sets > e[1].goalSets ? 'Green' : '#a0a0a0'
-                    return (<ListItem key={`l${ui}_${i}`}>
+                    return (<ListItem key={`l${ui}_${i}`} style={{flex: '25%'}}>
                       <ListItemAvatar>
                         <Avatar style={{backgroundColor: isExtraSet, textAlign: 'center', fontSize: '15px'}}>{`Set ${sets}`}</Avatar>
                       </ListItemAvatar>
